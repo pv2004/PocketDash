@@ -3,6 +3,14 @@
 A compact smart dashboard built with the **ESP32-C3 SuperMini** and a **0.96" SSD1306 OLED Display**. It provides useful real-time information like time, weather, nearby aircraft, air quality, and motivational quotes in a clean, distraction-free interface.
 
 ---
+## 📸 Preview
+
+<p align="center">
+  <img src="images/clock.jpg" alt="Clock Screen" width="180">
+  <!-- <img src="images/quote.jpg" alt="Quote Screen" width="180"> -->
+  <img src="images/flight.jpg" alt="Aircraft Radar Screen" width="180">
+  <img src="images/weather.jpg" alt="Weather Screen" width="180">
+</p>
 
 ## ✨ Features
 
