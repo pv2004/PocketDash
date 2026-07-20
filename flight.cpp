@@ -8,216 +8,283 @@
 #include "flight.h"
 
 String flightNo = "--";
-String airline = "--";
-String departure = "--";
-String destination = "--";
+String aircraft = "--";
 String altitude = "--";
 String speed = "--";
 String distance = "--";
+String direction = "";
+bool visible = false;
 
-// -----------------------------------------------------
-// Calculate distance (Haversine)
-// -----------------------------------------------------
-float calculateDistance(float lat1, float lon1, float lat2, float lon2)
+//--------------------------------------------------
+// Aircraft Type
+//--------------------------------------------------
+String getAircraftName(String type)
 {
-    const float R = 6371.0;
+    if(type=="A20N") return "A320neo";
+    if(type=="A21N") return "A321neo";
+    if(type=="A320") return "A320";
+    if(type=="B38M") return "B737MAX8";
+    if(type=="B738") return "B737-800";
+    if(type=="B77W") return "B777-300";
+    if(type=="AT76") return "ATR72";
+    if(type=="AT72") return "ATR72";
+    if(type=="E75L") return "E175";
+    if(type=="C25A") return "Citation";
 
-    float dLat = radians(lat2 - lat1);
-    float dLon = radians(lon2 - lon1);
-
-    float a =
-        sin(dLat / 2) * sin(dLat / 2) +
-        cos(radians(lat1)) *
-        cos(radians(lat2)) *
-        sin(dLon / 2) *
-        sin(dLon / 2);
-
-    float c = 2 * atan2(sqrt(a), sqrt(1 - a));
-
-    return R * c;
+    return type;
 }
 
-String getAirlineName(String code)
+//--------------------------------------------------
+// Bearing -> Compass
+//--------------------------------------------------
+String getCompassDirection(float deg)
 {
-    if(code=="6E") return "IndiGo";
-    if(code=="AI") return "AirIndia";
-    if(code=="IX") return "AIExpr";
-    if(code=="SG") return "SpiceJet";
-    if(code=="QP") return "Akasa";
-    if(code=="UK") return "Vistara";
-
-    return code;
+    if(deg >=337.5 || deg <22.5) return "N";
+    if(deg <67.5) return "NE";
+    if(deg <112.5) return "E";
+    if(deg <157.5) return "SE";
+    if(deg <202.5) return "S";
+    if(deg <247.5) return "SW";
+    if(deg <292.5) return "W";
+    return "NW";
 }
 
-// -----------------------------------------------------
+//--------------------------------------------------
+// Visibility
+//--------------------------------------------------
+bool isVisible(float altitudeFt,float distanceKm)
+{
+    float altitudeMeters = altitudeFt * 0.3048;
+
+    float horizon =
+        3.57 * sqrt(altitudeMeters);
+
+    return distanceKm <= horizon;
+}
+
+//--------------------------------------------------
 // Fetch Flight
-// -----------------------------------------------------
+//--------------------------------------------------
 void fetchFlight()
 {
-    if (WiFi.status() != WL_CONNECTED)
+    if(WiFi.status()!=WL_CONNECTED)
     {
         Serial.println("WiFi not connected!");
         return;
     }
 
-    HTTPClient http;
     WiFiClientSecure client;
-
     client.setInsecure();
 
-    String bbox =
-      String(MY_LAT - 0.55, 4) + "," +
-      String(MY_LON - 0.55, 4) + "," +
-      String(MY_LAT + 0.55, 4) + "," +
-      String(MY_LON + 0.55, 4);
+    HTTPClient http;
 
     String url =
-        "https://airlabs.co/api/v9/flights?api_key=" +
-        String(AIRLABS_API_KEY) +
-        "&bbox=" + bbox;
+        "https://api.adsb.lol/v2/lat/" +
+        String(MY_LAT,4) +
+        "/lon/" +
+        String(MY_LON,4) +
+        "/dist/60";
 
     Serial.println("Fetching Flights...");
     Serial.println(url);
 
-    http.begin(client, url);
-    http.setTimeout(10000);   // 10 seconds
+    if(!http.begin(client,url))
+    {
+        Serial.println("Connection Failed");
+        return;
+    }
+
+    http.setTimeout(10000);
 
     int httpCode = http.GET();
 
-    if (httpCode == HTTP_CODE_OK)
+    if(httpCode != HTTP_CODE_OK)
     {
-        String payload = http.getString();
+        Serial.print("HTTP Error: ");
+        Serial.println(http.errorToString(httpCode));
+        http.end();
+        return;
+    }
 
-        JsonDocument doc;
+    String payload = http.getString();
 
-        DeserializationError error = deserializeJson(doc, payload);
+    JsonDocument doc;
 
-        if (error)
+    DeserializationError error =
+        deserializeJson(doc,payload);
+
+    if(error)
+    {
+        Serial.println(error.c_str());
+        http.end();
+        return;
+    }
+
+    JsonArray flights = doc["ac"];
+
+    if(flights.size()==0)
+    {
+        flightNo="No Flight";
+        aircraft="";
+        altitude="";
+        speed="";
+        distance="";
+        direction="";
+        visible=false;
+
+        http.end();
+        return;
+    }
+
+    JsonObject bestVisible;
+    JsonObject bestNearest;
+
+    float visibleDist=99999;
+    float nearestDist=99999;
+
+        for (JsonObject f : flights)
+    {
+        String callsign = f["flight"] | "";
+        callsign.trim();
+
+        if (callsign == "")
+            continue;
+
+        // Ignore parked aircraft
+        if (f["alt_baro"].is<const char*>())
         {
-            Serial.print("JSON Error: ");
-            Serial.println(error.c_str());
-
-            http.end();
-            return;
+            String alt = f["alt_baro"].as<String>();
+            if (alt == "ground")
+                continue;
         }
 
-        JsonArray flights = doc["response"];
+        float gsKnots = f["gs"] | 0.0;
 
-        if (flights.size() == 0)
+        // Ignore taxiing aircraft
+        if (gsKnots < 50)
+            continue;
+
+        float dstKm = (f["dst"] | 0.0) * 1.852;
+
+        float altFt = 0;
+
+        if (f["alt_baro"].is<int>())
+            altFt = f["alt_baro"];
+
+        bool canSee = (dstKm <= 10.0);
+
+        if (canSee && dstKm < visibleDist)
         {
-            flightNo = "No Flight";
-            airline = "--";
-            departure = "--";
-            destination = "--";
-            altitude = "--";
-            speed = "--";
-            distance = "--";
-
-            http.end();
-            return;
+            visibleDist = dstKm;
+            bestVisible = f;
         }
 
-        float nearestDistance = 999999.0;
-        JsonObject nearestFlight;
-
-        for (JsonObject flight : flights)
+        if (dstKm < nearestDist)
         {
-            float lat = flight["lat"] | 0.0;
-            float lon = flight["lng"] | 0.0;
-
-            float d = calculateDistance(
-                MY_LAT,
-                MY_LON,
-                lat,
-                lon);
-
-            if (d < nearestDistance && d <= 60.0)
-            {
-                nearestDistance = d;
-                nearestFlight = flight;
-            }
+            nearestDist = dstKm;
+            bestNearest = f;
         }
+    }
 
-       if(nearestDistance == 999999)
-{
-    flightNo="No Flight";
-    airline="";
-    departure="";
-    destination="";
-    altitude="";
-    speed="";
-    distance="";
+    JsonObject chosen;
 
-    http.end();
-    return;
-}
-
-        flightNo = nearestFlight["flight_iata"] | "--";
-
-        airline = getAirlineName(
-            nearestFlight["airline_iata"] | "--"
-        );
-
-        departure = nearestFlight["dep_iata"] | "--";
-        destination = nearestFlight["arr_iata"] | "--";
-
-        int altFeet =
-        (int)((nearestFlight["alt"] | 0)*3.28084);
-
-        altitude = String(altFeet);
-
-        speed = String((int)(nearestFlight["speed"]|0));
-
-        distance = String(nearestDistance,1);
-
-        Serial.println("Nearest Flight:");
-        Serial.println(flightNo);
+    if (!bestVisible.isNull())
+    {
+        chosen = bestVisible;
+        visible = true;
+    }
+    else if (!bestNearest.isNull())
+    {
+        chosen = bestNearest;
+        visible = false;
     }
     else
     {
-        Serial.print("HTTP Error: ");
-        Serial.println(httpCode);
+        flightNo = "No Flight";
+        aircraft = "";
+        altitude = "";
+        speed = "";
+        distance = "";
+        direction = "";
+
+        http.end();
+        return;
     }
+
+    String callsign = chosen["flight"] | "--";
+    callsign.trim();
+    flightNo = callsign;
+
+    aircraft = getAircraftName(chosen["t"] | "--");
+
+    int altFt = chosen["alt_baro"] | 0;
+    altitude = String(altFt) + "ft";
+
+    int speedKm = (int)((chosen["gs"] | 0.0) * 1.852);
+    speed = String(speedKm) + "km/h";
+
+    float dstKm = (chosen["dst"] | 0.0) * 1.852;
+    distance = String(dstKm, 1) + "km";
+
+    float bearing = chosen["dir"] | 0.0;
+    direction =
+        getCompassDirection(bearing) +
+        " (" +
+        String((int)bearing) +
+        (char)247 + ")";
+
+    Serial.println("Selected Aircraft");
+    Serial.print("Callsign : ");
+    Serial.println(flightNo);
+    Serial.print("Type     : ");
+    Serial.println(aircraft);
+    Serial.print("Altitude : ");
+    Serial.println(altitude);
+    Serial.print("Speed    : ");
+    Serial.println(speed);
+    Serial.print("Distance : ");
+    Serial.println(distance);
 
     http.end();
 }
 
-// -----------------------------------------------------
-// Draw Flight Screen
-// -----------------------------------------------------
+//--------------------------------------------------
+// Draw OLED
+//--------------------------------------------------
 void drawFlight(Adafruit_SSD1306 &display)
 {
     display.clearDisplay();
 
     display.setTextColor(SSD1306_WHITE);
+
     display.setTextSize(1);
+    display.setCursor(28,0);
+    display.println("Flight Radar");
 
-    display.setCursor(18, 0);
-    display.println("Nearest Flight");
-
-    display.drawLine(0, 10, 127, 10, SSD1306_WHITE);
+    display.drawLine(0,10,127,10,SSD1306_WHITE);
 
     display.setCursor(0,18);
-    display.print(flightNo);
+    display.println(flightNo);
 
-    display.setCursor(55,18);
-    display.print(airline);
+    display.setCursor(70,18);
+    display.println(aircraft);
 
-    display.setCursor(0,30);
-    display.print(departure);
-    display.print("->");
-    display.print(destination);
-
-    display.setCursor(0,42);
-    display.print(speed);
-    display.print("km");
-
-    display.setCursor(72,42);
+    display.setCursor(0,32);
     display.print(altitude);
-    display.print("ft");
 
-    display.setCursor(0,54);
+    display.setCursor(72,32);
+    display.print(speed);
+
+    display.setCursor(0,46);
     display.print(distance);
-    display.print("km");
+
+    if(visible)
+    {
+        display.setCursor(0,56);
+        display.print("VISIBLE");      // simple arrow indicator
+        display.print(" Look ");
+        display.print(direction);
+    }
+
     display.display();
 }
