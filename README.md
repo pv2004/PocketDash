@@ -6,10 +6,10 @@ A compact smart dashboard built with the **ESP32-C3 SuperMini** and a **0.96" SS
 ## 📸 Preview
 
 <p align="center">
-  <img src="images/clock.jpg" alt="Clock Screen" width="180">
-  <img src="images/quote.jpg" alt="Quote Screen" width="180">
-  <img src="images/flight.jpg" alt="Aircraft Radar Screen" width="180">
-  <img src="images/weather.jpg" alt="Weather Screen" width="180">
+  <img src="images/clock.jpeg" alt="Clock Screen" width="180">
+  <img src="images/quote.jpeg" alt="Quote Screen" width="180">
+  <img src="images/flight.jpeg" alt="Aircraft Radar Screen" width="180">
+  <img src="images/weather.jpeg" alt="Weather Screen" width="180">
 </p>
 
 ## ✨ Features
