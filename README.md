@@ -16,7 +16,7 @@ A compact smart dashboard built with the **ESP32-C3 SuperMini** and a **0.96" SS
   
 ### 🕒 Digital Clock
 - Internet-synchronized time using NTP
-- Current time, day, and date
+- Current time, day, and date 
 - IST (GMT +5:30)
 
 ### 💬 Daily Quotes
