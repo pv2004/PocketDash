@@ -283,4 +283,4 @@ Released under the **MIT License** .
 - Weather alerts
 - Device backup & restore
 - Remote configuration
-- Firmware update notifications
+- Firmware update notifications.
