@@ -219,3 +219,68 @@ Pocket Dashboard is a lightweight, modular information display built around the 
 ## 📄 License
 
 Released under the **MIT License** .
+
+## 🚀 Future Enhancements
+
+### 🎨 User Experience
+- Animated weather icons
+- Multiple UI themes (Dark / Light)
+- Custom watch faces
+- Smooth page transition animations
+- Adjustable screen brightness
+
+### 📡 Connectivity
+- Bluetooth Low Energy (BLE)
+- Bluetooth companion mobile app
+- Wi-Fi manager with multiple saved networks
+- OTA firmware updates
+- Wi-Fi signal strength indicator
+
+### 📱 Smart Features
+- Phone notifications
+- Calendar & reminders
+- Music playback controls
+- Find My Phone
+- QR code generator (Wi-Fi, Contact, URL)
+
+### 🌍 Information Services
+- 7-day weather forecast
+- Sunrise & sunset times
+- UV Index
+- Moon phase
+- Pollen data
+- Live traffic information
+
+### ✈️ Aircraft Tracking
+- Aircraft heading
+- Airline logo
+- Aircraft photo
+- Flight origin & destination
+- Live map integration
+
+### 🔋 Power Management
+- Battery monitoring
+- Battery percentage
+- Deep sleep mode
+- Automatic brightness control
+- Low power mode
+
+### 📊 Additional Sensors
+- Indoor temperature & humidity
+- Barometric pressure
+- Ambient light sensor
+- Motion detection (Accelerometer)
+
+### 🔐 Smart Utilities
+- NFC support
+- Digital business card
+- Wi-Fi sharing via QR/NFC
+- Smart Home controls
+- Password vault
+- Digital ID / Contact sharing
+
+### ☁️ Cloud Features
+- Weather alerts
+- Device backup & restore
+- Remote configuration
+- Firmware update notifications
