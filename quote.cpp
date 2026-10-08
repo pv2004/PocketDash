@@ -4,6 +4,7 @@
 #include <WiFi.h>
 
 #include "quote.h"
+#include "display.h"
 
 String quote = "Loading...";
 String author = "";
@@ -87,5 +88,6 @@ void drawQuote(Adafruit_SSD1306 &display)
   display.print("- ");
   display.println(author);
 
+  drawWiFiSignal(display);
   display.display();
 }

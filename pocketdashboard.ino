@@ -105,27 +105,6 @@ void setup()
 
 void loop()
 {
-  // Refresh quote every 5 minutes
-  if (millis() - lastQuoteFetch >= quoteInterval)
-  {
-    fetchQuote();
-    lastQuoteFetch = millis();
-  }
-
-  // Refresh flight every 60 seconds
-  if (millis() - lastFlightFetch >= flightInterval)
-  {
-    fetchFlight();
-    lastFlightFetch = millis();
-  }
-
-  //weather fetch
-  if (millis() - lastWeatherFetch >= weatherInterval)
-  {
-      fetchWeather();
-      lastWeatherFetch = millis();
-  }
-
   // Change screen every 6 seconds
   if (millis() - lastSwitch >= switchInterval)
   {
@@ -135,6 +114,27 @@ void loop()
 
     if (currentScreen > 3)
       currentScreen = 0;
+  }
+
+  // Refresh quote every 5 minutes (only when on Quote screen)
+  if (millis() - lastQuoteFetch >= quoteInterval && currentScreen == 1)
+  {
+    fetchQuote();
+    lastQuoteFetch = millis();
+  }
+
+  // Refresh flight every 60 seconds (only when on Flight screen)
+  if (millis() - lastFlightFetch >= flightInterval && currentScreen == 2)
+  {
+    fetchFlight();
+    lastFlightFetch = millis();
+  }
+
+  // Weather fetch (only when on Weather screen)
+  if (millis() - lastWeatherFetch >= weatherInterval && currentScreen == 3)
+  {
+      fetchWeather();
+      lastWeatherFetch = millis();
   }
 
   switch (currentScreen)

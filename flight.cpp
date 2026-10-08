@@ -6,6 +6,7 @@
 
 #include "config.h"
 #include "flight.h"
+#include "display.h"
 
 String flightNo = "--";
 String aircraft = "--";
@@ -286,5 +287,6 @@ void drawFlight(Adafruit_SSD1306 &display)
         display.print(direction);
     }
 
+    drawWiFiSignal(display);
     display.display();
 }

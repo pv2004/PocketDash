@@ -5,6 +5,7 @@
 
 #include "config.h"
 #include "weather.h"
+#include "display.h"
 
 String temperature = "--";
 String humidity = "--";
@@ -214,5 +215,6 @@ void drawWeather(Adafruit_SSD1306 &display)
     display.print("W:");
     display.print(windSpeed);
 
+    drawWiFiSignal(display);
     display.display();
 }

@@ -4,6 +4,7 @@
 #include <Adafruit_SSD1306.h>
 
 void showMessage(Adafruit_SSD1306 &display, String title, String msg);
+void drawWiFiSignal(Adafruit_SSD1306 &display);
 
 #endif
 

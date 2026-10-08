@@ -1,4 +1,5 @@
 #include "clock.h"
+#include "display.h"
 #include <WiFi.h>
 #include <time.h>
 
@@ -60,5 +61,6 @@ void drawClock(Adafruit_SSD1306 &display, NTPClient &timeClient)
   display.setCursor((128 - w) / 2, 54);
   display.print(dateBuffer);
 
+  drawWiFiSignal(display);
   display.display();
 }

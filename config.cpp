@@ -1,4 +1,4 @@
 #include "config.h"
 
-const char* WIFI_SSID = "3rd Floor 310 C";
-const char* WIFI_PASSWORD = "Venkat@789";
+const char* WIFI_SSID = "Friends 4A";
+const char* WIFI_PASSWORD = "Friendscoliving";
