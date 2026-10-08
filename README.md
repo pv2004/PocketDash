@@ -1,4 +1,4 @@
-﻿# Pocket Dashboard 📟
+# Pocket Dashboard 📟
 
 A compact smart dashboard built with the **ESP32-C3 SuperMini** and a **0.96" SSD1306 OLED Display**. It provides useful real-time information like time, weather, nearby aircraft, air quality, and motivational quotes in a clean, distraction-free interface.
 
@@ -52,6 +52,17 @@ Displays:
 - AQI
 - AQI Status
 
+### 🏎️ F1 Schedule
+Powered by **Jolpi F1 API**
+
+Displays the upcoming Formula 1 Grand Prix schedule:
+- Grand Prix Name
+- Next upcoming session (e.g., FP1, Qualifying, Race)
+- Date and local time of the next session
+
+### 📶 Wi-Fi Signal Indicator
+- Real-time 4-bar RSSI signal strength indicator on every screen.
+
 ### 🔄 Auto Page Rotation
 
 The dashboard automatically rotates through:
@@ -60,6 +71,7 @@ The dashboard automatically rotates through:
 2. Quotes
 3. Aircraft Radar
 4. Weather & AQI
+5. F1 Schedule
 
 ---
 
@@ -92,6 +104,7 @@ The dashboard automatically rotates through:
 | Open-Meteo | Weather |
 | Open-Meteo Air Quality | AQI |
 | ZenQuotes | Motivational Quotes |
+| api.jolpi.ca | F1 Schedule |
 | pool.ntp.org | Time Synchronization |
 
 ---
@@ -108,12 +121,14 @@ PocketDashboard/
 ├── quote.cpp
 ├── flight.cpp
 ├── weather.cpp
+├── f1.cpp
 ├── display.cpp
 │
 ├── clock.h
 ├── quote.h
 ├── flight.h
 ├── weather.h
+├── f1.h
 ├── display.h
 │
 └── README.md
@@ -147,8 +162,9 @@ No API keys are required.
 | Aircraft Radar | Every minute |
 | Weather | Every minute |
 | AQI | Every minute |
+| F1 Schedule | Every hour |
 
-All tasks use `millis()` for smooth, non-blocking execution.
+All tasks use `millis()` for smooth, non-blocking execution. Furthermore, network requests are optimized to only fetch data when the respective screen is currently active, saving bandwidth and battery.
 
 ---
 
@@ -196,6 +212,17 @@ AQI:42  Good
 H:63%  W:11km/h
 ```
 
+### 🏎️ F1 Schedule
+
+```text
+F1 Schedule       [■■■]
+-----------------------
+Singapore Grand Prix
+
+Next: Race
+Sun 11/10 12:00
+```
+
 ---
 
 ## 🚀 Roadmap
@@ -203,7 +230,6 @@ H:63%  W:11km/h
 - Aircraft heading
 - Better aircraft visibility detection
 - Weather icons
-- Wi-Fi signal strength
 - Battery monitoring
 - OTA firmware updates
 - Bluetooth companion app
