@@ -12,6 +12,7 @@
 #include "quote.h"
 #include "flight.h"
 #include "weather.h"
+#include "f1.h"
 
 #define SCREEN_WIDTH 128
 #define SCREEN_HEIGHT 64
@@ -48,6 +49,12 @@ const unsigned long flightInterval = 60000UL;   // 60 seconds
 // ----------------------
 unsigned long lastWeatherFetch = 0;
 const unsigned long weatherInterval = 60000UL; //60 seconds
+
+// ----------------------
+// F1 Refresh
+// ----------------------
+unsigned long lastF1Fetch = 0;
+const unsigned long f1Interval = 3600000UL; // 1 hour
 
 void setup()
 {
@@ -96,11 +103,12 @@ void setup()
   fetchQuote();
   fetchFlight();
   fetchWeather();
-
+  fetchF1(timeClient.getEpochTime());
 
   lastQuoteFetch = millis();
   lastFlightFetch = millis();
   lastWeatherFetch = millis();
+  lastF1Fetch = millis();
 }
 
 void loop()
@@ -112,7 +120,7 @@ void loop()
 
     currentScreen++;
 
-    if (currentScreen > 3)
+    if (currentScreen > 4)
       currentScreen = 0;
   }
 
@@ -137,6 +145,13 @@ void loop()
       lastWeatherFetch = millis();
   }
 
+  // F1 fetch (only when on F1 screen)
+  if (millis() - lastF1Fetch >= f1Interval && currentScreen == 4)
+  {
+      fetchF1(timeClient.getEpochTime());
+      lastF1Fetch = millis();
+  }
+
   switch (currentScreen)
   {
     case 0:
@@ -153,6 +168,10 @@ void loop()
 
     case 3:
       drawWeather(display);
+      break;
+
+    case 4:
+      drawF1(display);
       break;
   }
 
