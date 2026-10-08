@@ -13,18 +13,20 @@ String f1SessionDate = "--";
 
 // Simple helper to convert UTC components into Unix Epoch
 time_t my_utc_to_epoch(int year, int month, int day, int hour, int min, int sec) {
-    int y = year;
-    int m = month;
-    if (m <= 2) {
-        m += 12;
-        y -= 1;
+    int days = 0;
+    for (int y = 1970; y < year; y++) {
+        days += (y % 4 == 0 && (y % 100 != 0 || y % 400 == 0)) ? 366 : 365;
     }
-    int d = day;
-    int leapDays = (y / 4) - (y / 100) + (y / 400);
-    int daysSince0000 = 365 * y + leapDays + (153 * m - 457) / 5 + d - 306;
-    int daysSince1970 = daysSince0000 - 719468;
-    time_t epoch = daysSince1970 * 86400ULL + hour * 3600ULL + min * 60ULL + sec;
-    return epoch;
+    int daysInMonth[] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+    if (year % 4 == 0 && (year % 100 != 0 || year % 400 == 0)) {
+        daysInMonth[1] = 29;
+    }
+    for (int m = 0; m < month - 1; m++) {
+        days += daysInMonth[m];
+    }
+    days += day - 1;
+    
+    return ((time_t)days * 86400) + (hour * 3600) + (min * 60) + sec;
 }
 
 struct Session {
@@ -38,7 +40,7 @@ void checkAndSetNextSession(JsonObject race, time_t currentLocalEpoch) {
     int count = 0;
     
     // Helper lambda to parse and add a session
-    auto addSession = [&](const char* jsonKey, const char* name) {
+    auto addSession = [&](const char* jsonKey, const char* name, int durationHours) {
         if (race.containsKey(jsonKey)) {
             const char* dateStr = race[jsonKey]["date"];
             const char* timeStr = race[jsonKey]["time"];
@@ -49,11 +51,22 @@ void checkAndSetNextSession(JsonObject race, time_t currentLocalEpoch) {
             
             // Add 19800 seconds (5.5 hours) to UTC epoch to get IST epoch
             time_t ist = my_utc_to_epoch(year, month, day, hour, min, sec) + 19800;
+            time_t ist_end = ist + (durationHours * 3600);
             
             struct tm *ptm = gmtime(&ist);
+            int s_wday = ptm->tm_wday;
+            int s_mday = ptm->tm_mday;
+            int s_mon = ptm->tm_mon + 1;
+            int s_hour = ptm->tm_hour;
+            int s_min = ptm->tm_min;
+            
+            ptm = gmtime(&ist_end);
+            int e_hour = ptm->tm_hour;
+            int e_min = ptm->tm_min;
+            
             const char* days[] = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
             char buf[32];
-            sprintf(buf, "%s %02d/%02d %02d:%02d", days[ptm->tm_wday], ptm->tm_mday, ptm->tm_mon + 1, ptm->tm_hour, ptm->tm_min);
+            sprintf(buf, "%s %02d/%02d %02d:%02d-%02d:%02d", days[s_wday], s_mday, s_mon, s_hour, s_min, e_hour, e_min);
             
             sessions[count].name = name;
             sessions[count].epoch = ist;
@@ -62,12 +75,12 @@ void checkAndSetNextSession(JsonObject race, time_t currentLocalEpoch) {
         }
     };
     
-    addSession("FirstPractice", "FP1");
-    addSession("SecondPractice", "FP2");
-    addSession("ThirdPractice", "FP3");
-    addSession("SprintQualifying", "Sprint Q");
-    addSession("Sprint", "Sprint");
-    addSession("Qualifying", "Quali");
+    addSession("FirstPractice", "FP1", 1);
+    addSession("SecondPractice", "FP2", 1);
+    addSession("ThirdPractice", "FP3", 1);
+    addSession("SprintQualifying", "Sprint Q", 1);
+    addSession("Sprint", "Sprint", 1);
+    addSession("Qualifying", "Quali", 1);
     
     // The main race is directly at the root of the race object
     if (race.containsKey("date") && race.containsKey("time")) {
@@ -76,11 +89,24 @@ void checkAndSetNextSession(JsonObject race, time_t currentLocalEpoch) {
         int year, month, day, hour, min, sec;
         sscanf(dateStr, "%d-%d-%d", &year, &month, &day);
         sscanf(timeStr, "%d:%d:%d", &hour, &min, &sec);
+        
         time_t ist = my_utc_to_epoch(year, month, day, hour, min, sec) + 19800;
+        time_t ist_end = ist + (2 * 3600); // Race is usually 2 hours
+        
         struct tm *ptm = gmtime(&ist);
+        int s_wday = ptm->tm_wday;
+        int s_mday = ptm->tm_mday;
+        int s_mon = ptm->tm_mon + 1;
+        int s_hour = ptm->tm_hour;
+        int s_min = ptm->tm_min;
+        
+        ptm = gmtime(&ist_end);
+        int e_hour = ptm->tm_hour;
+        int e_min = ptm->tm_min;
+        
         const char* days[] = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
         char buf[32];
-        sprintf(buf, "%s %02d/%02d %02d:%02d", days[ptm->tm_wday], ptm->tm_mday, ptm->tm_mon + 1, ptm->tm_hour, ptm->tm_min);
+        sprintf(buf, "%s %02d/%02d %02d:%02d-%02d:%02d", days[s_wday], s_mday, s_mon, s_hour, s_min, e_hour, e_min);
         
         sessions[count].name = "Race";
         sessions[count].epoch = ist;
